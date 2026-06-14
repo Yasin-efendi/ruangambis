@@ -5,6 +5,9 @@ import {
   Outlet,
 } from '@tanstack/react-router'
 
+import { LoginPage } from '../pages/auth/LoginPage'
+import { DashboardPage } from '../pages/dashboard/DashboardPage'
+
 // Wrapper global dari semua route di aplikasi
 function RootLayout() {
   return <Outlet />
@@ -22,9 +25,25 @@ const indexRoute = createRoute({
   component: () => <div>RuangAmbis</div>,
 })
 
-// Menyusun tree route dengan menambahkan indexRoute sebagai anak dari rootRoute
+// Menentukan route untuk halaman login yang akan ditampilkan saat pengguna mengakses path '/login'
+const loginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/login',
+  component: LoginPage,
+})
+
+// Menentukan route untuk halaman dashboard yang akan ditampilkan saat pengguna mengakses path '/dashboard'
+const dashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/dashboard',
+  component: DashboardPage,
+})
+
+// Menyusun tree route dengan menambahkan indexRoute, loginRoute, dan dashboardRoute sebagai anak dari rootRoute
 const routeTree = rootRoute.addChildren([
   indexRoute,
+  loginRoute,
+  dashboardRoute,
 ])
 
 // Membuat dan mengekspor instance router utama yang akan digunakan di seluruh aplikasi dengan menggunakan routeTree yang telah dibuat
