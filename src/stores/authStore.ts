@@ -13,6 +13,8 @@ interface AuthState {
   setLoading: (loading: boolean) => void
   // Tipe data untuk fungsi initialize yang akan menginisialisasi status autentikasi pengguna saat aplikasi dimuat
   initialize: () => Promise<void>
+	// Mendengarkan perubahan status auth (login/logout) secara real-time dan mengembalikan fungsi cleanup untuk unsubscribe
+	subscribeToAuthChanges: () => () => void
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -52,5 +54,27 @@ export const useAuthStore = create<AuthState>()(
         })
       }
     },
+
+		/**
+		 * Mendengarkan perubahan status autentikasi secara real-time (login/logout/token refresh).
+		 * Fungsi ini mengembalikan fungsi pembersih (cleanup) untuk mencegah kebocoran memori.
+		 */
+		subscribeToAuthChanges: () => {
+			const {
+				data: { subscription },
+			} = supabase.auth.onAuthStateChange(
+				(_event, session) => {
+					set({
+						session,
+						user: session?.user ?? null,
+						isLoading: false,
+					})
+				},
+			)
+
+			return () => {
+				subscription.unsubscribe()
+			}
+		},
   }),
 )
