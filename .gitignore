@@ -24,4 +24,7 @@ dist-ssr
 *.sw?
 
 #supabase
-./supabase.md
+/supabase.md
+/milestones.md
+/supabase_schema_visualization.md
+#/ruangambis_schema_final.sql
