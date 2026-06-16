@@ -1,35 +1,124 @@
-import { createRouter, createRootRoute, createRoute, Outlet } from '@tanstack/react-router'
+import { 
+  createRouter, 
+  createRootRoute, 
+  createRoute, 
+  Outlet,
+  redirect 
+} from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/router-devtools'
 import App from '../App'
+import LoginPage from '../pages/auth/Login'
+import RegisterPage from '../pages/auth/Register'
+import DashboardPage from '../pages/dashboard/Dashboard'
+import ProfilePage from '../pages/profile/Profile' // <-- BARU: Import Profile
+import AppLayout from '@/components/layout/AppLayout'
+import { useAuthStore } from '@/stores/authStore'
 
-// 1. Root Route: Membungkus seluruh aplikasi
+// ============================================================
+// 1. ROOT ROUTE
+// ============================================================
 const rootRoute = createRootRoute({
   component: () => (
     <>
-      {/* Outlet adalah tempat child routes (seperti indexRoute) akan di-render */}
       <Outlet />
-      
-      {/* DevTools untuk debugging routing (hanya di development) */}
       {import.meta.env.DEV && <TanStackRouterDevtools />}
     </>
   ),
 })
 
-// 2. Index Route: Halaman utama (saat ini masih menggunakan komponen App.tsx)
-const indexRoute = createRoute({
+// ============================================================
+// 2. PUBLIC ROUTES
+// ============================================================
+const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
+  path: '/login',
+  component: LoginPage,
+})
+
+const registerRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/register',
+  component: RegisterPage,
+})
+
+// ============================================================
+// 3. AUTHENTICATED LAYOUT
+// ============================================================
+const authenticatedLayout = createRoute({
+  getParentRoute: () => rootRoute,
+  id: '_authenticated',
+  component: AppLayout,
+  
+  beforeLoad: async ({ location }) => {
+    const { initialize, isLoading } = useAuthStore.getState()
+    await initialize()
+    
+    if (isLoading) {
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
+    
+    const currentSession = useAuthStore.getState().session
+    
+    if (!currentSession) {
+      throw redirect({
+        to: '/login',
+        search: {
+          redirect: location.href,
+        },
+      })
+    }
+  },
+})
+
+// ============================================================
+// 4. INDEX ROUTE — Redirect ke /dashboard
+// ============================================================
+const indexRoute = createRoute({
+  getParentRoute: () => authenticatedLayout,
   path: '/',
+  beforeLoad: () => {
+    throw redirect({ to: '/dashboard' })
+  },
   component: App,
 })
 
-// 3. Buat Route Tree (Gabungkan root dengan child routes)
-const routeTree = rootRoute.addChildren([indexRoute])
+// ============================================================
+// 5. DASHBOARD ROUTE
+// ============================================================
+const dashboardRoute = createRoute({
+  getParentRoute: () => authenticatedLayout,
+  path: '/dashboard',
+  component: DashboardPage,
+})
 
-// 4. Export instance router
+// ============================================================
+// 6. PROFILE ROUTE — BARU!
+// ============================================================
+const profileRoute = createRoute({
+  getParentRoute: () => authenticatedLayout,
+  path: '/profile',
+  component: ProfilePage,
+})
+
+// ============================================================
+// 7. ROUTE TREE
+// ============================================================
+const routeTree = rootRoute.addChildren([
+  loginRoute,
+  registerRoute,
+  
+  authenticatedLayout.addChildren([
+    indexRoute,
+    dashboardRoute,
+    profileRoute, // <-- BARU: Tambahkan profile route
+  ]),
+])
+
+// ============================================================
+// 8. EXPORT & TYPE REGISTRATION
+// ============================================================
 export const router = createRouter({ routeTree })
 
-// 5. Register types (WAJIB untuk type-safety di TanStack Router v1)
-// Ini memberitahu TypeScript tentang struktur router kita
 declare module '@tanstack/react-router' {
   interface Register {
     router: typeof router
