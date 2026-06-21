@@ -13,6 +13,8 @@ import DashboardPage from '../pages/dashboard/Dashboard'
 import ProfilePage from '../pages/profile/Profile' // <-- BARU: Import Profile
 import AppLayout from '@/components/layout/AppLayout'
 import { useAuthStore } from '@/stores/authStore'
+import InstructionsPage from '../pages/tryout/Instructions' // <-- BARU
+import PackagesPage from '../pages/tryout/Packages' // <-- BARU
 
 // ============================================================
 // 1. ROOT ROUTE
@@ -101,6 +103,24 @@ const profileRoute = createRoute({
 })
 
 // ============================================================
+// 7. TRY-OUT ROUTES — CBT System
+// ============================================================
+const instructionsRoute = createRoute({
+  getParentRoute: () => authenticatedLayout,
+  path: '/tryout/$packageId/instructions',
+  component: InstructionsPage,
+})
+
+// ============================================================
+// 8. PACKAGES ROUTE — Daftar Paket Try Out
+// ============================================================
+const packagesRoute = createRoute({
+  getParentRoute: () => authenticatedLayout,
+  path: '/tryout',
+  component: PackagesPage,
+})
+
+// ============================================================
 // 7. ROUTE TREE
 // ============================================================
 const routeTree = rootRoute.addChildren([
@@ -111,6 +131,8 @@ const routeTree = rootRoute.addChildren([
     indexRoute,
     dashboardRoute,
     profileRoute, // <-- BARU: Tambahkan profile route
+    packagesRoute, // <-- BARU: Tambahkan packages route
+    instructionsRoute, // <-- BARU: Tambahkan instructions route
   ]),
 ])
 

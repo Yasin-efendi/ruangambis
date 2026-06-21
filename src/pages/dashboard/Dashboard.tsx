@@ -139,15 +139,17 @@ export default function DashboardPage() {
                     </CardHeader>
                 </Card>
             </Link>
-            <Card className="border-zinc-800 bg-zinc-900 hover:border-violet-500/50 transition-colors cursor-pointer">
-              <CardHeader>
-                <div className="text-3xl mb-2">📝</div>
-                <CardTitle className="text-white text-lg">Try Out</CardTitle>
-                <CardDescription className="text-zinc-400">
-                  Kerjakan paket soal dan lihat perkembanganmu
-                </CardDescription>
-              </CardHeader>
-            </Card>
+            <Link to="/tryout"> {/* <-- WRAP dengan Link */}
+              <Card className="border-zinc-800 bg-zinc-900 hover:border-violet-500/50 transition-colors cursor-pointer">
+                <CardHeader>
+                  <div className="text-3xl mb-2">📝</div>
+                  <CardTitle className="text-white text-lg">Try Out</CardTitle>
+                  <CardDescription className="text-zinc-400">
+                    Kerjakan paket soal dan lihat perkembanganmu
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
             <Card className="border-zinc-800 bg-zinc-900 hover:border-blue-500/50 transition-colors cursor-pointer">
               <CardHeader>
                 <div className="text-3xl mb-2">📊</div>
