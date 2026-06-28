@@ -155,3 +155,30 @@ export interface QuestionNavigationState {
   answers: Map<string, string | null> // question_id → option_id
   flagged: Set<string> // question_id yang di-flag
 }
+
+// ============================================================
+// 10. DATA REVIEW (dari RPC get_session_review)
+// ============================================================
+
+/**
+ * Opsi dengan is_correct (hanya tersedia di RPC review)
+ */
+export interface OptionWithCorrect extends Option {
+  is_correct: boolean
+}
+
+/**
+ * Soal dengan opsi lengkap (include is_correct) untuk review
+ */
+export interface QuestionWithOptionsCorrect extends Question {
+  options: OptionWithCorrect[]
+}
+
+/**
+ * Return value dari RPC get_session_review
+ */
+export interface SessionReviewData {
+  session: TryOutSession
+  questions: QuestionWithOptionsCorrect[]
+  answers: SessionAnswer[]
+}

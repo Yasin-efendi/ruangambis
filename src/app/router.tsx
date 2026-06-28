@@ -15,6 +15,9 @@ import AppLayout from '@/components/layout/AppLayout'
 import { useAuthStore } from '@/stores/authStore'
 import InstructionsPage from '../pages/tryout/Instructions' // <-- BARU
 import PackagesPage from '../pages/tryout/Packages' // <-- BARU
+import TakePage from '../pages/tryout/Take' // <-- BARU
+import ResultPage from '../pages/tryout/Result' // <-- BARU
+import ReviewPage from '../pages/tryout/Review' // <-- BARU
 
 // ============================================================
 // 1. ROOT ROUTE
@@ -112,6 +115,33 @@ const instructionsRoute = createRoute({
 })
 
 // ============================================================
+// 9. TAKE ROUTE — Pengerjaan Soal CBT
+// ============================================================
+const takeRoute = createRoute({
+  getParentRoute: () => authenticatedLayout,
+  path: '/tryout/$sessionId/take',
+  component: TakePage,
+})
+
+// ============================================================
+// 10. RESULT ROUTE — Halaman Hasil Try Out
+// ============================================================
+const resultRoute = createRoute({
+  getParentRoute: () => authenticatedLayout,
+  path: '/tryout/$sessionId/result',
+  component: ResultPage,
+})
+
+// ============================================================
+// 11. REVIEW ROUTE — Halaman Pembahasan Try Out
+// ============================================================
+const reviewRoute = createRoute({
+  getParentRoute: () => authenticatedLayout,
+  path: '/tryout/$sessionId/review',
+  component: ReviewPage,
+})
+
+// ============================================================
 // 8. PACKAGES ROUTE — Daftar Paket Try Out
 // ============================================================
 const packagesRoute = createRoute({
@@ -133,6 +163,9 @@ const routeTree = rootRoute.addChildren([
     profileRoute, // <-- BARU: Tambahkan profile route
     packagesRoute, // <-- BARU: Tambahkan packages route
     instructionsRoute, // <-- BARU: Tambahkan instructions route
+    takeRoute, // <-- BARU
+    resultRoute, // <-- BARU
+    reviewRoute, // <-- BARU
   ]),
 ])
 
