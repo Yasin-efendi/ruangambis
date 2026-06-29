@@ -221,6 +221,74 @@ export default function InstructionsPage() {
           </CardContent>
         </Card>
 
+        {/* Fitur Sistem CBT */}
+        <Card className="border-blue-800/50 bg-blue-950/20">
+          <CardHeader>
+            <CardTitle className="text-blue-300 text-lg flex items-center gap-2">
+              <span>✨</span>
+              <span>Fitur Sistem CBT</span>
+            </CardTitle>
+            <CardDescription className="text-blue-200/70">
+              Fitur-fitur yang memudahkan kamu selama mengerjakan try-out
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {/* Fitur 1: Auto-save */}
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-zinc-900/50 border border-zinc-800">
+                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-green-500/20 text-green-400 flex-shrink-0">
+                  💾
+                </div>
+                <div>
+                  <div className="font-semibold text-white text-sm">Auto-Save</div>
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    Setiap jawaban yang kamu pilih otomatis tersimpan. Tidak perlu klik "Simpan".
+                  </p>
+                </div>
+              </div>
+
+              {/* Fitur 2: Resume */}
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-zinc-900/50 border border-zinc-800">
+                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-500/20 text-blue-400 flex-shrink-0">
+                  🔁
+                </div>
+                <div>
+                  <div className="font-semibold text-white text-sm">Aman di-Refresh</div>
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    Jika halaman tidak sengaja ter-refresh, jawaban dan sisa waktu kamu tetap aman.
+                  </p>
+                </div>
+              </div>
+
+              {/* Fitur 3: Warning */}
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-zinc-900/50 border border-zinc-800">
+                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-yellow-500/20 text-yellow-400 flex-shrink-0">
+                  ⚠️
+                </div>
+                <div>
+                  <div className="font-semibold text-white text-sm">Peringatan 5 Menit</div>
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    Kamu akan mendapat peringatan saat 5 menit terakhir sebelum waktu habis.
+                  </p>
+                </div>
+              </div>
+
+              {/* Fitur 4: Auto-submit */}
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-zinc-900/50 border border-zinc-800">
+                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-violet-500/20 text-violet-400 flex-shrink-0">
+                  🤖
+                </div>
+                <div>
+                  <div className="font-semibold text-white text-sm">Auto-Submit</div>
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    Saat waktu habis, jawaban kamu otomatis dikumpulkan. Timer akan berubah merah saat 1 menit terakhir.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Tombol Aksi */}
         <div className="flex flex-col sm:flex-row gap-3 pt-4">
           <Link to="/tryout" className="flex-1">

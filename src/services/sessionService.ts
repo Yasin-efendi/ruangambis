@@ -355,3 +355,73 @@ export async function submitSession(
     return null
   }
 }
+
+/**
+ * Sinkronisasi sisa waktu ke database
+ * Dipanggil setiap 30 detik untuk backup, dan saat submit
+ * 
+ * @param sessionId - ID sesi
+ * @param timeRemaining - Sisa waktu dalam detik
+ * @returns true jika berhasil, false jika gagal
+ */
+export async function syncTimeRemaining(
+  sessionId: string,
+  timeRemaining: number
+): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('try_out_sessions')
+      .update({
+        time_remaining: Math.max(0, Math.floor(timeRemaining)),
+        last_synced_at: new Date().toISOString(),
+      })
+      .eq('id', sessionId)
+
+    if (error) {
+      console.error('Error syncing time remaining:', error)
+      return false
+    }
+
+    return true
+  } catch (err) {
+    console.error('syncTimeRemaining error:', err)
+    return false
+  }
+}
+
+/**
+ * Cek status sesi (untuk validasi sebelum lanjut pengerjaan)
+ * Berguna saat user refresh halaman — cek apakah sesi masih aktif
+ * 
+ * @param sessionId - ID sesi
+ * @returns 'in_progress' | 'submitted' | 'expired' | 'not_found'
+ */
+export async function checkSessionStatus(
+  sessionId: string
+): Promise<'in_progress' | 'submitted' | 'expired' | 'not_found'> {
+  try {
+    const { data, error } = await supabase
+      .from('try_out_sessions')
+      .select('status, time_remaining')
+      .eq('id', sessionId)
+      .single()
+
+    if (error || !data) {
+      return 'not_found'
+    }
+
+    if (data.status === 'submitted') {
+      return 'submitted'
+    }
+
+    // Cek apakah waktu sudah habis (time_remaining = 0 atau null dengan started_at lama)
+    if (data.time_remaining !== null && data.time_remaining <= 0) {
+      return 'expired'
+    }
+
+    return 'in_progress'
+  } catch (err) {
+    console.error('checkSessionStatus error:', err)
+    return 'not_found'
+  }
+}

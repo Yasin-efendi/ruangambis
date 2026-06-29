@@ -6,14 +6,95 @@ import {
   saveAnswer,
   toggleFlag,
   submitSession,
+  syncTimeRemaining,
 } from '@/services/sessionService'
 import type { SessionWithDetails, QuestionWithOptions } from '@/types/tryout.types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
 // ============================================================
-// SUB-COMPONENT: QuestionCard
-// Menampilkan satu soal dengan pilihan jawaban A-E
+// HELPER: Format waktu (detik → MM:SS atau HH:MM:SS)
+// ============================================================
+function formatTime(totalSeconds: number): string {
+  const seconds = Math.max(0, Math.floor(totalSeconds))
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  const secs = seconds % 60
+
+  const pad = (n: number) => n.toString().padStart(2, '0')
+
+  if (hours > 0) {
+    return `${pad(hours)}:${pad(minutes)}:${pad(secs)}`
+  }
+  return `${pad(minutes)}:${pad(secs)}`
+}
+
+// ============================================================
+// SUB-COMPONENT: TimerDisplay
+// Menampilkan countdown timer dengan warna dinamis
+// ============================================================
+function TimerDisplay({ timeRemaining }: { timeRemaining: number }) {
+  const isWarning = timeRemaining <= 300 && timeRemaining > 60 // 5 menit terakhir
+  const isCritical = timeRemaining <= 60 // 1 menit terakhir
+
+  let textColor = 'text-white'
+  let bgColor = 'bg-zinc-900 border-zinc-700'
+  let animation = ''
+
+  if (isCritical) {
+    textColor = 'text-red-400'
+    bgColor = 'bg-red-950/50 border-red-500'
+    animation = 'animate-pulse'
+  } else if (isWarning) {
+    textColor = 'text-yellow-400'
+    bgColor = 'bg-yellow-950/30 border-yellow-500'
+  }
+
+  return (
+    <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border ${bgColor} ${animation}`}>
+      <span className="text-xs text-zinc-400 uppercase tracking-wide">Sisa Waktu</span>
+      <span className={`text-2xl font-mono font-bold ${textColor}`}>
+        {formatTime(timeRemaining)}
+      </span>
+    </div>
+  )
+}
+
+// ============================================================
+// SUB-COMPONENT: WarningModal
+// Modal peringatan 5 menit terakhir
+// ============================================================
+function WarningModal({ timeRemaining, onClose }: { timeRemaining: number; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md border-yellow-600 bg-zinc-900">
+        <CardHeader>
+          <CardTitle className="text-yellow-300 text-xl flex items-center gap-2">
+            <span>⚠️</span>
+            <span>Waktu Hampir Habis!</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-zinc-300">
+            Kamu hanya memiliki <strong className="text-yellow-400">{formatTime(timeRemaining)}</strong> lagi untuk menyelesaikan try-out.
+          </p>
+          <p className="text-sm text-zinc-400">
+            Pastikan semua jawaban sudah terisi. Setelah waktu habis, jawaban akan otomatis dikumpulkan.
+          </p>
+          <Button
+            onClick={onClose}
+            className="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-semibold"
+          >
+            Lanjutkan Mengerjakan
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// ============================================================
+// SUB-COMPONENT: QuestionCard (sama seperti sebelumnya)
 // ============================================================
 function QuestionCard({
   question,
@@ -88,8 +169,7 @@ function QuestionCard({
 }
 
 // ============================================================
-// SUB-COMPONENT: QuestionNav
-// Panel nomor soal dengan status warna
+// SUB-COMPONENT: QuestionNav (sama seperti sebelumnya)
 // ============================================================
 function QuestionNav({
   questions,
@@ -116,7 +196,6 @@ function QuestionNav({
             const isFlagged = flagged.has(q.id)
             const isCurrent = idx === currentIndex
 
-            // Prioritas warna: current > flagged > answered > default
             let bgColor = 'bg-zinc-800 text-zinc-400 border-zinc-700'
             if (isAnswered) bgColor = 'bg-green-500/20 text-green-300 border-green-500/30'
             if (isFlagged) bgColor = 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30'
@@ -135,7 +214,6 @@ function QuestionNav({
           })}
         </div>
 
-        {/* Legend */}
         <div className="mt-4 pt-4 border-t border-zinc-800 grid grid-cols-2 gap-2 text-xs">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded bg-zinc-800 border border-zinc-700"></div>
@@ -160,8 +238,7 @@ function QuestionNav({
 }
 
 // ============================================================
-// SUB-COMPONENT: SubmitModal
-// Modal konfirmasi sebelum submit
+// SUB-COMPONENT: SubmitModal (sama seperti sebelumnya)
 // ============================================================
 function SubmitModal({
   totalQuestions,
@@ -244,7 +321,7 @@ function SubmitModal({
 }
 
 // ============================================================
-// MAIN COMPONENT: TakePage
+// MAIN COMPONENT: TakePage (dengan timer)
 // ============================================================
 export default function TakePage() {
   const { sessionId } = useParams({ strict: false }) as { sessionId: string }
@@ -260,8 +337,19 @@ export default function TakePage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showSubmitModal, setShowSubmitModal] = useState(false)
 
-  // Ref untuk debounce save jawaban
+  // Timer state
+  const [timeRemaining, setTimeRemaining] = useState<number>(0)
+  const [endTime, setEndTime] = useState<number>(0) // timestamp dalam ms
+  const [showWarningModal, setShowWarningModal] = useState(false)
+  // const [warningShown, setWarningShown] = useState(false) // untuk tampilkan warning 1x saja
+  // Tambahkan ref ini di bagian deklarasi state komponenmu
+  const warningShownRef = useRef(false);
+
+  // Refs untuk intervals
+  const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const syncIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isSubmittingRef = useRef(false) // untuk mencegah double-submit
 
   // ============================================================
   // Fetch data saat halaman dibuka
@@ -272,7 +360,6 @@ export default function TakePage() {
         setIsLoading(true)
         setError(null)
 
-        // 1. Fetch session (include package_id)
         const sessionData = await getSession(sessionId)
         if (!sessionData) {
           setError('Sesi try-out tidak ditemukan.')
@@ -280,7 +367,6 @@ export default function TakePage() {
           return
         }
 
-        // Cek apakah sesi sudah di-submit
         if (sessionData.status === 'submitted') {
           navigate({
             to: '/tryout/$sessionId/result',
@@ -291,7 +377,6 @@ export default function TakePage() {
 
         setSession(sessionData)
 
-        // 2. Fetch soal + opsi berdasarkan package_id
         const questionsData = await getQuestionsWithOptions(sessionData.package_id)
         if (questionsData.length === 0) {
           setError('Tidak ada soal dalam paket ini.')
@@ -300,7 +385,7 @@ export default function TakePage() {
         }
         setQuestions(questionsData)
 
-        // 3. Initialize answers & flagged dari data sesi (untuk resume)
+        // Initialize answers & flagged dari data sesi
         const answersMap = new Map<string, string | null>()
         const flaggedSet = new Set<string>()
         for (const ans of sessionData.answers) {
@@ -313,6 +398,24 @@ export default function TakePage() {
         }
         setAnswers(answersMap)
         setFlagged(flaggedSet)
+
+        // ============================================================
+        // HITUNG TIMER
+        // ============================================================
+        const startedAt = new Date(sessionData.started_at).getTime()
+        const durationMs = sessionData.package.duration_min * 60 * 1000
+        const calculatedEndTime = startedAt + durationMs
+        const now = Date.now()
+        const remaining = Math.max(0, Math.floor((calculatedEndTime - now) / 1000))
+
+        setEndTime(calculatedEndTime)
+        setTimeRemaining(remaining)
+
+        // Jika waktu sudah habis saat load → auto-submit
+        if (remaining <= 0) {
+          await handleAutoSubmit()
+          return
+        }
       } catch (err) {
         console.error('Error fetching data:', err)
         setError('Gagal memuat data sesi. Silakan coba lagi.')
@@ -322,6 +425,98 @@ export default function TakePage() {
     }
 
     fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, navigate])
+
+  // ============================================================
+  // Timer interval: update setiap 1 detik
+  // ============================================================
+  useEffect(() => {
+    if (endTime === 0 || isLoading) return
+
+    // Cleanup interval sebelumnya jika ada
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current)
+    }
+
+    timerIntervalRef.current = setInterval(() => {
+      const now = Date.now()
+      const remaining = Math.max(0, Math.floor((endTime - now) / 1000))
+      setTimeRemaining(remaining)
+
+      // Warning modal saat 5 menit terakhir (tampilkan 1x saja)
+      if (remaining <= 300 && remaining > 0 && !warningShownRef.current) {
+        setShowWarningModal(true)
+        warningShownRef.current = true // Mengunci agar tidak masuk ke blok ini lagi
+      }
+
+      // Auto-submit saat waktu habis
+      if (remaining <= 0 && !isSubmittingRef.current) {
+        handleAutoSubmit()
+      }
+    }, 1000)
+
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [endTime, isLoading])
+
+  // ============================================================
+  // Sync interval: simpan time_remaining ke DB setiap 30 detik
+  // ============================================================
+  useEffect(() => {
+    if (endTime === 0 || isLoading) return
+
+    // Sync pertama kali segera
+    syncTimeRemaining(sessionId, timeRemaining)
+
+    syncIntervalRef.current = setInterval(() => {
+      const now = Date.now()
+      const remaining = Math.max(0, Math.floor((endTime - now) / 1000))
+      syncTimeRemaining(sessionId, remaining)
+    }, 30000)
+
+    return () => {
+      if (syncIntervalRef.current) {
+        clearInterval(syncIntervalRef.current)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [endTime, sessionId, isLoading])
+
+  // ============================================================
+  // Handler: Auto-submit saat waktu habis
+  // ============================================================
+  const handleAutoSubmit = useCallback(async () => {
+    if (isSubmittingRef.current) return
+    isSubmittingRef.current = true
+    setIsSubmitting(true)
+
+    // Sync final time_remaining
+    await syncTimeRemaining(sessionId, 0)
+
+    // Submit sesi
+    const result = await submitSession(sessionId)
+
+    if (!result) {
+      console.error('Auto-submit failed')
+      isSubmittingRef.current = false
+      setIsSubmitting(false)
+      return
+    }
+
+    // Cleanup intervals
+    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
+    if (syncIntervalRef.current) clearInterval(syncIntervalRef.current)
+
+    // Redirect ke hasil
+    navigate({
+      to: '/tryout/$sessionId/result',
+      params: { sessionId },
+    })
   }, [sessionId, navigate])
 
   // ============================================================
@@ -329,14 +524,12 @@ export default function TakePage() {
   // ============================================================
   const handleSelectOption = useCallback(
     (questionId: string, optionId: string) => {
-      // 1. Update state lokal (optimistic update)
       setAnswers((prev) => {
         const next = new Map(prev)
         next.set(questionId, optionId)
         return next
       })
 
-      // 2. Debounced save ke backend (500ms setelah klik terakhir)
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current)
       }
@@ -357,7 +550,6 @@ export default function TakePage() {
     (questionId: string) => {
       const newIsFlagged = !flagged.has(questionId)
 
-      // 1. Update state lokal
       setFlagged((prev) => {
         const next = new Set(prev)
         if (newIsFlagged) {
@@ -368,7 +560,6 @@ export default function TakePage() {
         return next
       })
 
-      // 2. Save ke backend (tanpa debounce, flag jarang di-toggle cepat)
       toggleFlag(sessionId, questionId, newIsFlagged).then((success) => {
         if (!success) {
           console.error('Failed to toggle flag for question:', questionId)
@@ -379,20 +570,30 @@ export default function TakePage() {
   )
 
   // ============================================================
-  // Handler: Submit sesi
+  // Handler: Manual submit (klik tombol "Kumpulkan")
   // ============================================================
   const handleSubmit = async () => {
+    if (isSubmittingRef.current) return
+    isSubmittingRef.current = true
     setIsSubmitting(true)
+
+    // Sync final time_remaining
+    await syncTimeRemaining(sessionId, timeRemaining)
+
     const result = await submitSession(sessionId)
 
     if (!result) {
       setError('Gagal mengumpulkan jawaban. Silakan coba lagi.')
+      isSubmittingRef.current = false
       setIsSubmitting(false)
       setShowSubmitModal(false)
       return
     }
 
-    // Redirect ke halaman hasil
+    // Cleanup intervals
+    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
+    if (syncIntervalRef.current) clearInterval(syncIntervalRef.current)
+
     navigate({
       to: '/tryout/$sessionId/result',
       params: { sessionId },
@@ -451,7 +652,7 @@ export default function TakePage() {
   return (
     <div className="min-h-screen bg-zinc-950 p-4 md:p-6 text-zinc-50">
       <div className="max-w-6xl mx-auto space-y-4">
-        {/* Header */}
+        {/* Header dengan Timer */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-zinc-800">
           <div>
             <h1 className="text-xl font-bold text-white">{session.package.title}</h1>
@@ -459,15 +660,19 @@ export default function TakePage() {
               Soal {currentIndex + 1} dari {questions.length}
             </p>
           </div>
-          <Button
-            onClick={() => setShowSubmitModal(true)}
-            className="bg-violet-600 hover:bg-violet-500 text-white"
-          >
-            Kumpulkan Jawaban
-          </Button>
+          <div className="flex items-center gap-3">
+            <TimerDisplay timeRemaining={timeRemaining} />
+            <Button
+              onClick={() => setShowSubmitModal(true)}
+              className="bg-violet-600 hover:bg-violet-500 text-white"
+              disabled={isSubmitting}
+            >
+              Kumpulkan
+            </Button>
+          </div>
         </div>
 
-        {/* Main Content: 2 kolom di desktop, 1 kolom di mobile */}
+        {/* Main Content */}
         <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
           {/* Kolom Kiri: Soal */}
           <div className="space-y-4">
@@ -480,7 +685,6 @@ export default function TakePage() {
               onToggleFlag={() => handleToggleFlag(currentQuestion.id)}
             />
 
-            {/* Tombol Navigasi Bawah */}
             <div className="flex gap-2">
               <Button
                 onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
@@ -510,7 +714,6 @@ export default function TakePage() {
               onSelect={setCurrentIndex}
             />
 
-            {/* Info Progress */}
             <Card className="border-zinc-800 bg-zinc-900">
               <CardContent className="pt-4">
                 <div className="space-y-2 text-sm">
@@ -533,7 +736,15 @@ export default function TakePage() {
         </div>
       </div>
 
-      {/* Modal Submit */}
+      {/* Warning Modal (5 menit terakhir) */}
+      {showWarningModal && (
+        <WarningModal
+          timeRemaining={timeRemaining}
+          onClose={() => setShowWarningModal(false)}
+        />
+      )}
+
+      {/* Submit Modal */}
       {showSubmitModal && (
         <SubmitModal
           totalQuestions={questions.length}
