@@ -18,6 +18,7 @@ import PackagesPage from '../pages/tryout/Packages' // <-- BARU
 import TakePage from '../pages/tryout/Take' // <-- BARU
 import ResultPage from '../pages/tryout/Result' // <-- BARU
 import ReviewPage from '../pages/tryout/Review' // <-- BARU
+import AnalyticsPage from '../pages/analytics/Analytics' // <-- BARU
 
 // ============================================================
 // 1. ROOT ROUTE
@@ -142,6 +143,15 @@ const reviewRoute = createRoute({
 })
 
 // ============================================================
+// 12. ANALYTICS ROUTE — Halaman Analytics
+// ============================================================
+const analyticsRoute = createRoute({
+  getParentRoute: () => authenticatedLayout,
+  path: '/analytics',
+  component: AnalyticsPage,
+})
+
+// ============================================================
 // 8. PACKAGES ROUTE — Daftar Paket Try Out
 // ============================================================
 const packagesRoute = createRoute({
@@ -166,6 +176,7 @@ const routeTree = rootRoute.addChildren([
     takeRoute, // <-- BARU
     resultRoute, // <-- BARU
     reviewRoute, // <-- BARU
+    analyticsRoute, // <-- BARU
   ]),
 ])
 
