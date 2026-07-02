@@ -19,6 +19,9 @@ import TakePage from '../pages/tryout/Take' // <-- BARU
 import ResultPage from '../pages/tryout/Result' // <-- BARU
 import ReviewPage from '../pages/tryout/Review' // <-- BARU
 import AnalyticsPage from '../pages/analytics/Analytics' // <-- BARU
+import ForumListPage from '../pages/forum/ForumList' // <-- BARU
+import CreatePostPage from '../pages/forum/CreatePost' // <-- BARU
+import PostDetailPage from '../pages/forum/PostDetail' // <-- BARU
 
 // ============================================================
 // 1. ROOT ROUTE
@@ -152,6 +155,27 @@ const analyticsRoute = createRoute({
 })
 
 // ============================================================
+// 13. FORUM ROUTES — Sistem Diskusi
+// ============================================================
+const forumListRoute = createRoute({
+  getParentRoute: () => authenticatedLayout,
+  path: '/forum',
+  component: ForumListPage,
+})
+
+const createPostRoute = createRoute({
+  getParentRoute: () => authenticatedLayout,
+  path: '/forum/create',
+  component: CreatePostPage,
+})
+
+const postDetailRoute = createRoute({
+  getParentRoute: () => authenticatedLayout,
+  path: '/forum/$postId',
+  component: PostDetailPage,
+})
+
+// ============================================================
 // 8. PACKAGES ROUTE — Daftar Paket Try Out
 // ============================================================
 const packagesRoute = createRoute({
@@ -177,6 +201,9 @@ const routeTree = rootRoute.addChildren([
     resultRoute, // <-- BARU
     reviewRoute, // <-- BARU
     analyticsRoute, // <-- BARU
+    forumListRoute, // <-- BARU
+    createPostRoute, // <-- BARU
+    postDetailRoute, // <-- BARU
   ]),
 ])
 

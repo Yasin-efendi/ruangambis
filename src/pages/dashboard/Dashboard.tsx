@@ -161,15 +161,17 @@ export default function DashboardPage() {
                 </CardHeader>
               </Card>
             </Link>
-            <Card className="border-zinc-800 bg-zinc-900 hover:border-teal-500/50 transition-colors cursor-pointer">
-              <CardHeader>
-                <div className="text-3xl mb-2">💬</div>
-                <CardTitle className="text-white text-lg">Forum</CardTitle>
-                <CardDescription className="text-zinc-400">
-                  Diskusi soal dengan teman-teman
-                </CardDescription>
-              </CardHeader>
-            </Card>
+            <Link to="/forum">
+              <Card className="border-zinc-800 bg-zinc-900 hover:border-teal-500/50 transition-colors cursor-pointer h-full">
+                <CardHeader>
+                  <div className="text-3xl mb-2">💬</div>
+                  <CardTitle className="text-white text-lg">Forum</CardTitle>
+                  <CardDescription className="text-zinc-400">
+                    Diskusi soal dengan teman-teman
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
           </div>
         </div>
 
